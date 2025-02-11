@@ -1,0 +1,32 @@
+[
+  {
+    "timestamp": "2025-02-11T17:05:21.157Z",
+    "type": "conversation_summary",
+    "content": "The user is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:04:49.490Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:03:19.001Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and could use casual encouragement and study tips",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T16:55:39.531Z",
+    "type": "bot_response",
+    "content": "haha world domination? that's a pretty big goal my friend! i'm all for ambition but let's start a little smaller. why don't we focus on just getting through your to-do list for today? one step at a time, you'll get there eventually. but for now let's keep things chill and realistic, whatdya say?",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T16:54:07.566Z",
+    "type": "bot_response",
+    "content": "no problem, just let me know whenever you need any help staying motivated or getting things done. i'm here to lend a hand in a casual, low-pressure way. feel free to chat about anything on your mind or ask for productivity tips when you need them.",
+    "importance": 1
+  }
+]

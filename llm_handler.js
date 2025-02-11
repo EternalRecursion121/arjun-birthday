@@ -64,14 +64,21 @@ class LLMHandler {
 
             const endTime = Date.now();
             console.log(`Claude response received in ${endTime - startTime}ms`);
-            
-            if (!response?.content?.[0]?.text) {
-                console.error('Invalid response format from Claude:', response);
+
+            // Updated response parsing logic
+            let replyText = "";
+            // First check if there is a 'completion' field (as a string) to use as our reply
+            if (typeof response.completion === 'string') {
+                replyText = response.completion;
+            } else if (response?.content && Array.isArray(response.content) && response.content[0]?.text) {
+                replyText = response.content[0].text;
+            } else {
+                console.error('Invalid response format from Claude:', JSON.stringify(response, null, 2));
                 throw new Error('Invalid response format from Claude');
             }
             
-            console.log('Response:', response.content[0].text.slice(0, 100) + '...');
-            return response.content[0].text;
+            console.log('Response:', replyText.slice(0, 100) + '...');
+            return replyText;
         } catch (error) {
             console.error('Error in LLMHandler.getResponse:', error);
             console.error('Stack trace:', error.stack);
@@ -193,10 +200,7 @@ MEMORY_UPDATE: {
             if (response.stop_reason === "tool_calls") {
                 for (const toolCall of response.content) {
                     if (toolCall.type === "tool_calls") {
-                        // Execute the tool
                         const result = await this._executeTool(toolCall);
-
-                        // Add tool result to messages
                         chatHistory.push({ role: response.role, content: response.content });
                         chatHistory.push({
                             role: "user",
@@ -206,14 +210,22 @@ MEMORY_UPDATE: {
                                 content: result
                             }]
                         });
-
-                        // Get final response
                         return await this._getResponse(prompt, chatHistory);
                     }
                 }
             }
 
-            return response.content[0].text;
+            // Updated response parsing logic for _getResponse
+            let replyText = "";
+            if (typeof response.completion === 'string') {
+                replyText = response.completion;
+            } else if (response?.content && Array.isArray(response.content) && response.content[0]?.text) {
+                replyText = response.content[0].text;
+            } else {
+                console.error('Invalid response format from Claude:', JSON.stringify(response, null, 2));
+                throw new Error('Invalid response format from Claude');
+            }
+            return replyText;
         } catch (error) {
             console.error("Error getting Claude response:", error);
             return "sorry, having trouble processing that rn. could you try again?";

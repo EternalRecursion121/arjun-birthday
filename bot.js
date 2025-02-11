@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Events, REST, Routes, ChannelType } = require('discord.js');
 const dotenv = require('dotenv');
 const { LLMHandler } = require('./llm_handler.js');
 const { ClockifyHandler } = require('./clockify_handler.js');
@@ -23,7 +23,10 @@ class ArjunBot {
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildMessages,
                 GatewayIntentBits.MessageContent,
-                GatewayIntentBits.DirectMessages
+                GatewayIntentBits.DirectMessages,
+                GatewayIntentBits.DirectMessageTyping,
+                GatewayIntentBits.DirectMessageReactions,
+                GatewayIntentBits.MessageContent
             ]
         });
 
@@ -105,6 +108,20 @@ class ArjunBot {
             {
                 name: 'export_data',
                 description: 'get all your data as a JSON file'
+            },
+            {
+                name: 'set_check_probability',
+                description: 'change how often I check in randomly (0-100%)',
+                options: [
+                    {
+                        name: 'probability',
+                        description: 'Percentage chance of checking in each hour (0-100)',
+                        type: 4, // INTEGER
+                        required: true,
+                        min_value: 0,
+                        max_value: 100
+                    }
+                ]
             }
         ];
 
@@ -145,6 +162,9 @@ class ArjunBot {
 
         // Add initial logging
         console.log('Bot initializing...');
+
+        this.client.on('debug', console.log);
+        this.client.on('error', console.error);
     }
 
     setupEventHandlers() {
@@ -165,7 +185,7 @@ class ArjunBot {
                 author: message.author?.tag,
                 bot: message.author?.bot,
                 channelType: message.channel?.type,
-                isDM: message.channel?.isDMBased?.()
+                isDM: message.channel?.type === ChannelType.DM
             });
 
             if (message.author.bot) {
@@ -173,7 +193,7 @@ class ArjunBot {
                 return;
             }
             
-            if (message.channel.isDMBased()) {
+            if (message.channel.type === ChannelType.DM) {
                 console.log('Processing DM message');
                 try {
                     // Initialize user data if it doesn't exist
@@ -350,12 +370,43 @@ class ArjunBot {
         try {
             const user = await this.client.users.fetch(userId);
             const message = this.morningMessages[Math.floor(Math.random() * this.morningMessages.length)];
-            await user.send(message);
+            const response = await user.send(message);
             await this.saveUserMessage(userId, 'morning', message);
             
-            // Save to memory if it's important
-            if (this.memoryHandler.calculateImportance(message) > 0) {
-                await this.memoryHandler.addMemory(userId, 'morning_check', message);
+            // Wait for user's response
+            const filter = m => m.author.id === userId;
+            const collected = await response.channel.awaitMessages({ filter, max: 1, time: 300000 });
+            
+            if (collected.size > 0) {
+                const userResponse = collected.first().content;
+                
+                // Get Claude's response with potential memory
+                const prompt = `The user has shared their plans for today: "${userResponse}"
+
+If these plans reveal something important about the user's goals, work style, or patterns that would be helpful to remember, create a brief memory summary starting with "User". Otherwise, respond with "null".
+
+Include your memory in <MEMORY> tags if you want to create one.
+
+Respond in a casual, friendly way to their plans.`;
+                
+                const botResponse = await this.llmHandler.getResponse(prompt, "You are a casual, friendly productivity assistant.");
+                
+                // Check for memory tag
+                const memoryMatch = botResponse.match(/<MEMORY>(.*?)<\/MEMORY>/);
+                if (memoryMatch) {
+                    const memorySummary = memoryMatch[1].trim();
+                    await this.memoryHandler.addMemory(
+                        userId,
+                        'morning_plans',
+                        memorySummary
+                    );
+                }
+
+                // Send response without memory tags
+                const cleanResponse = botResponse.replace(/<MEMORY>.*?<\/MEMORY>/g, '').trim();
+                if (cleanResponse && cleanResponse.toLowerCase() !== 'null') {
+                    await user.send(cleanResponse);
+                }
             }
         } catch (error) {
             console.error(`Error in morning check for user ${userId}:`, error);
@@ -366,12 +417,27 @@ class ArjunBot {
         try {
             const user = await this.client.users.fetch(userId);
             const message = this.eveningMessages[Math.floor(Math.random() * this.eveningMessages.length)];
-            await user.send(message);
+            const response = await user.send(message);
             await this.saveUserMessage(userId, 'evening', message);
             
-            // Save to memory if it's important
-            if (this.memoryHandler.calculateImportance(message) > 0) {
-                await this.memoryHandler.addMemory(userId, 'evening_check', message);
+            // Wait for user's response and create a memory
+            const filter = m => m.author.id === userId;
+            const collected = await response.channel.awaitMessages({ filter, max: 1, time: 300000 }); // 5 min timeout
+            
+            if (collected.size > 0) {
+                const userResponse = collected.first().content;
+                const memoryPrompt = `Based on the user's evening review: "${userResponse}"
+Create a brief, meaningful summary of their day's achievements, challenges, or insights. Format as a single concise sentence starting with "User".`;
+                
+                const memorySummary = await this.llmHandler.getResponse(memoryPrompt, "You are a helpful assistant that creates concise memory summaries.");
+                
+                if (memorySummary && memorySummary.toLowerCase() !== "null") {
+                    await this.memoryHandler.addMemory(
+                        userId,
+                        'evening_review',
+                        memorySummary
+                    );
+                }
             }
         } catch (error) {
             console.error(`Error in evening check for user ${userId}:`, error);
@@ -475,10 +541,11 @@ For more detailed help, DM me with your questions!`,
 morning check: ${userData.morningCheckHour}:00
 evening review: ${userData.eveningReviewHour}:00
 weekly review: ${userData.weeklyReviewDay} at ${userData.weeklyReviewHour}:00
-random check probability: ${userData.activityCheckProbability * 100}%
+random check probability: ${Math.round(userData.activityCheckProbability * 100)}%
 timezone: ${userData.timezone}
 
-use /set_time to change when i check in with you!`,
+use /set_time to change when i check in with you!
+use /set_check_probability to change how often i randomly check in!`,
                         ephemeral: true
                     });
                     break;
@@ -568,6 +635,28 @@ use /set_time to change when i check in with you!`,
                     }
                     break;
 
+                case 'set_check_probability':
+                    const userConfigData = await this.getUserConfig(interaction.user.id);
+                    if (!userConfigData) {
+                        await interaction.reply({
+                            content: "you haven't started yet! use /begin to get started.",
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
+                    const probability = interaction.options.getInteger('probability');
+                    userConfigData.activityCheckProbability = probability / 100; // Convert percentage to decimal
+                    
+                    await this.saveUserConfig(interaction.user.id, userConfigData);
+                    await this.scheduleChecks(); // Reschedule checks with new probability
+                    
+                    await interaction.reply({
+                        content: `got it! i'll now have a ${probability}% chance of checking in each hour between your morning and evening checks`,
+                        ephemeral: true
+                    });
+                    break;
+
                 default:
                     await interaction.reply({
                         content: "sorry, i don't recognize that command. use /help to see all available commands!",
@@ -595,32 +684,26 @@ use /set_time to change when i check in with you!`,
 
     async handleDM(message) {
         try {
-            // Show typing indicator
             await message.channel.sendTyping().catch(console.error);
             console.log(`Processing DM from ${message.author.tag}: ${message.content}`);
 
-            // Get user's message history
-            const messages = await this.getUserMessages(message.author.id);
-            console.log('Retrieved message history');
+            // Fetch recent messages from the DM channel
+            const messages = await message.channel.messages.fetch({ limit: 50 });
+            console.log('Retrieved message history from Discord');
             
-            // Get more conversation history
-            const recentMessages = [
-                ...messages.morning.slice(-10),
-                ...messages.evening.slice(-10),
-                ...messages.activity.slice(-10),
-                ...messages.weekly.slice(-5),
-                ...messages.conversation.slice(-20)
-            ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            // Format conversation history for Claude, excluding the current message
+            const conversationHistory = messages
+                .filter(msg => msg.id !== message.id) // Exclude current message
+                .sort((a, b) => a.createdTimestamp - b.createdTimestamp) // Sort by timestamp
+                .map(msg => {
+                    if (msg.author.id === this.client.user.id) {
+                        return `Assistant: ${msg.content}`;
+                    } else {
+                        return `Human: ${msg.content}`;
+                    }
+                })
+                .join('\n');
 
-            // Format conversation history for Claude
-            const conversationHistory = recentMessages.map(m => {
-                if (m.user && m.bot) {
-                    return `Human: ${m.user}\nAssistant: ${m.bot}`;
-                }
-                return `Assistant: ${m.message}`;
-            }).join('\n');
-
-            console.log('Getting relevant memories...');
             // Get relevant long-term memories
             const relevantMemories = await this.memoryHandler.getRelevantMemories(
                 message.author.id,
@@ -635,7 +718,7 @@ use /set_time to change when i check in with you!`,
             // Keep typing indicator active
             await message.channel.sendTyping().catch(console.error);
 
-            // Combine all context for Claude
+            // System prompt with memory instructions
             const systemPrompt = `You are Arjun, a friendly and casual productivity assistant. You speak in a relaxed, informal style using lowercase and minimal punctuation. Your goal is to help users stay productive and achieve their goals.
 
 Context about this conversation:
@@ -644,41 +727,34 @@ ${memoriesContext}
 Recent conversation history:
 ${conversationHistory}
 
-Remember to maintain a casual, friendly tone and keep responses concise. Help the user stay productive but don't be pushy.`;
+Remember to maintain a casual, friendly tone and keep responses concise. Help the user stay productive but don't be pushy.
 
-            console.log('Getting response from Claude...');
-            // Get response from Claude via LLMHandler
+If you learn something important about the user that should be remembered for future conversations (like goals, preferences, challenges, or work habits), include a <MEMORY> tag in your response like this:
+<MEMORY>Brief summary of what to remember about the user</MEMORY>
+
+Only include a memory if it's truly useful for future interactions. Most responses won't need a memory.`;
+
+            // Get response from Claude
             const response = await this.llmHandler.getResponse(message.content, systemPrompt);
             console.log(`Claude response received: ${response.slice(0, 100)}...`);
-            
-            // Save the conversation
-            await this.saveUserMessage(message.author.id, 'conversation', {
-                user: message.content,
-                bot: response,
-                timestamp: new Date().toISOString()
-            });
-            console.log('Conversation saved');
 
-            // Save important information to long-term memory
-            if (this.memoryHandler.calculateImportance(message.content) > 0) {
+            // Check if response contains a memory tag
+            const memoryMatch = response.match(/<MEMORY>(.*?)<\/MEMORY>/);
+            if (memoryMatch) {
+                const memorySummary = memoryMatch[1].trim();
                 await this.memoryHandler.addMemory(
                     message.author.id,
-                    'user_message',
-                    message.content
+                    'conversation_summary',
+                    memorySummary
                 );
-                console.log('User message saved to memory');
-            }
-            if (this.memoryHandler.calculateImportance(response) > 0) {
-                await this.memoryHandler.addMemory(
-                    message.author.id,
-                    'bot_response',
-                    response
-                );
-                console.log('Bot response saved to memory');
+                console.log('Memory saved:', memorySummary);
             }
 
-            // Send the response
-            await message.reply(response);
+            // Remove memory tags from the response before sending to user
+            const cleanResponse = response.replace(/<MEMORY>.*?<\/MEMORY>/g, '').trim();
+
+            // Send the cleaned response
+            await message.reply(cleanResponse);
             console.log('Response sent to user');
         } catch (error) {
             console.error('Error handling DM:', error);
