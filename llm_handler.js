@@ -44,9 +44,9 @@ class LLMHandler {
             
             const response = await this.client.messages.create({
                 model: 'claude-3-sonnet-20240229',
-                max_tokens: 1000,
+                max_tokens: 300,
                 temperature: 0.7,
-                system: context,
+                system: context + "\n\nKeep your responses concise and casual - aim for 3-4 sentences max.",
                 messages: [{
                     role: 'user',
                     content: message
@@ -95,18 +95,12 @@ class LLMHandler {
 The user is sharing their plan for today: ${message}
 
 Your role:
-1. review their plan briefly but thoughtfully
-2. ask any clarifying questions if needed
-3. maybe suggest practical improvements
+1. give a friendly response (2-3 sentences)
+2. ask a clarifying question if needed
+3. offer one helpful suggestion if appropriate
 4. note anything worth remembering
 
-keep it casual but focused on helping them have a productive day
-
-if the plan seems clear and you have no questions:
-END_CONVERSATION: true
-
-if you want to discuss more:
-END_CONVERSATION: false
+Keep responses casual and natural, but avoid long explanations.
 
 for memory updates:
 MEMORY_UPDATE: {
@@ -127,18 +121,12 @@ MEMORY_UPDATE: {
 The user is sharing about their day: ${message}
 
 Your role:
-1. listen and understand what they did
-2. ask about anything unclear
-3. help them reflect on what worked/didnt work
+1. acknowledge their day (1-2 sentences)
+2. ask a follow-up question if needed
+3. make a brief observation about what worked/didn't
 4. note important things for memory
 
-keep the tone casual but thoughtful. focus on learning and improvement rather than just praise
-
-if you understand their day and have no more questions:
-END_CONVERSATION: true
-
-if you want to discuss more:
-END_CONVERSATION: false
+Keep responses under 4-5 sentences. Be casual but thoughtful.
 
 for memory updates:
 MEMORY_UPDATE: {
@@ -158,9 +146,10 @@ MEMORY_UPDATE: {
         const prompt = `Context: ${context}
 The user is sharing what they're working on: ${message}
 
-keep it brief and casual. maybe ask a quick clarifying question if relevant.
+Give a 2-3 sentence response. A quick acknowledgment and maybe one relevant question.
+Keep it casual and natural.
 
-if you want to note anything:
+for memory updates:
 MEMORY_UPDATE: {
     "add": {"key": "value"},
     "update": {"existing_key": "new_value"},

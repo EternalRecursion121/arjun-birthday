@@ -34,7 +34,7 @@ wheels/
 *.swo
 
 # Project specific
-user_data.json
+data/
 *.log 
 
 node_modules/

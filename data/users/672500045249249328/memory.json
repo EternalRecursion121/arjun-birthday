@@ -1,5 +1,59 @@
 [
   {
+    "timestamp": "2025-02-11T17:18:58.350Z",
+    "type": "conversation_summary",
+    "content": "User has 3 problem sets and an essay on free will to work on today",
+    "importance": 2
+  },
+  {
+    "timestamp": "2025-02-11T17:21:36.184Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:36.183Z",
+    "type": "conversation_summary",
+    "content": "User has 3 problem sets and an essay on free will to work on today",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:36.182Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:36.181Z",
+    "type": "conversation_summary",
+    "content": "User has 3 problem sets and an essay on free will to work on today",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:30.892Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and could use casual encouragement and study tips",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:30.891Z",
+    "type": "conversation_summary",
+    "content": "User is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:21:30.890Z",
+    "type": "conversation_summary",
+    "content": "User has 3 problem sets and an essay on free will to work on today",
+    "importance": 1
+  },
+  {
+    "timestamp": "2025-02-11T17:20:28.021Z",
+    "type": "conversation_summary",
+    "content": "User has 3 problem sets and an essay on free will to work on today",
+    "importance": 1
+  },
+  {
     "timestamp": "2025-02-11T17:05:21.157Z",
     "type": "conversation_summary",
     "content": "The user is working on a difficult discrete math problem set and also plans to go to the gym today. A balanced, low-pressure approach seems to work best for productivity.",

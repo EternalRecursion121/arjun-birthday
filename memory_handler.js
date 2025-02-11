@@ -61,7 +61,7 @@ class MemoryHandler {
         return importance;
     }
 
-    async getRelevantMemories(userId, currentContext, maxMemories = 5) {
+    async getRelevantMemories(userId, currentContext, maxMemories = 50) {
         const memories = await this.getMemories(userId);
         
         // Simple relevance scoring based on keyword matching

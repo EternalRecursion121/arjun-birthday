@@ -379,8 +379,6 @@ class ArjunBot {
             
             if (collected.size > 0) {
                 const userResponse = collected.first().content;
-                
-                // Get Claude's response with potential memory
                 const prompt = `The user has shared their plans for today: "${userResponse}"
 
 If these plans reveal something important about the user's goals, work style, or patterns that would be helpful to remember, create a brief memory summary starting with "User". Otherwise, respond with "null".
@@ -391,19 +389,23 @@ Respond in a casual, friendly way to their plans.`;
                 
                 const botResponse = await this.llmHandler.getResponse(prompt, "You are a casual, friendly productivity assistant.");
                 
-                // Check for memory tag
-                const memoryMatch = botResponse.match(/<MEMORY>(.*?)<\/MEMORY>/);
+                // Extract and save memory before cleaning response
+                const memoryMatch = botResponse.match(/<MEMORY>[\s\S]*?<\/MEMORY>/g);
                 if (memoryMatch) {
-                    const memorySummary = memoryMatch[1].trim();
-                    await this.memoryHandler.addMemory(
-                        userId,
-                        'morning_plans',
-                        memorySummary
-                    );
+                    // Handle each memory block
+                    for (const memoryBlock of memoryMatch) {
+                        const memoryContent = memoryBlock.replace(/<\/?MEMORY>/g, '').trim();
+                        await this.memoryHandler.addMemory(
+                            userId,
+                            'morning_plans',
+                            memoryContent
+                        );
+                        console.log('Memory saved:', memoryContent);
+                    }
                 }
 
-                // Send response without memory tags
-                const cleanResponse = botResponse.replace(/<MEMORY>.*?<\/MEMORY>/g, '').trim();
+                // Clean all memory tags from response
+                const cleanResponse = botResponse.replace(/<MEMORY>[\s\S]*?<\/MEMORY>/g, '').trim();
                 if (cleanResponse && cleanResponse.toLowerCase() !== 'null') {
                     await user.send(cleanResponse);
                 }
@@ -722,6 +724,7 @@ use /set_check_probability to change how often i randomly check in!`,
             const systemPrompt = `You are Arjun, a friendly and casual productivity assistant. You speak in a relaxed, informal style using lowercase and minimal punctuation. Your goal is to help users stay productive and achieve their goals.
 
 Context about this conversation:
+I already have these memories saved about the user:
 ${memoriesContext}
 
 Recent conversation history:
@@ -729,29 +732,32 @@ ${conversationHistory}
 
 Remember to maintain a casual, friendly tone and keep responses concise. Help the user stay productive but don't be pushy.
 
-If you learn something important about the user that should be remembered for future conversations (like goals, preferences, challenges, or work habits), include a <MEMORY> tag in your response like this:
+If you learn something NEW and important about the user that isn't already covered in the memories above, include a <MEMORY> tag in your response like this:
 <MEMORY>Brief summary of what to remember about the user</MEMORY>
 
-Only include a memory if it's truly useful for future interactions. Most responses won't need a memory.`;
+Only include a memory if it's truly useful for future interactions AND isn't redundant with existing memories. Most responses won't need a new memory.`;
 
             // Get response from Claude
             const response = await this.llmHandler.getResponse(message.content, systemPrompt);
             console.log(`Claude response received: ${response.slice(0, 100)}...`);
 
-            // Check if response contains a memory tag
-            const memoryMatch = response.match(/<MEMORY>(.*?)<\/MEMORY>/);
+            // Extract and save memory before cleaning response
+            const memoryMatch = response.match(/<MEMORY>[\s\S]*?<\/MEMORY>/g);
             if (memoryMatch) {
-                const memorySummary = memoryMatch[1].trim();
-                await this.memoryHandler.addMemory(
-                    message.author.id,
-                    'conversation_summary',
-                    memorySummary
-                );
-                console.log('Memory saved:', memorySummary);
+                // Handle each memory block
+                for (const memoryBlock of memoryMatch) {
+                    const memoryContent = memoryBlock.replace(/<\/?MEMORY>/g, '').trim();
+                    await this.memoryHandler.addMemory(
+                        message.author.id,
+                        'conversation_summary',
+                        memoryContent
+                    );
+                    console.log('Memory saved:', memoryContent);
+                }
             }
 
-            // Remove memory tags from the response before sending to user
-            const cleanResponse = response.replace(/<MEMORY>.*?<\/MEMORY>/g, '').trim();
+            // Clean all memory tags from response
+            const cleanResponse = response.replace(/<MEMORY>[\s\S]*?<\/MEMORY>/g, '').trim();
 
             // Send the cleaned response
             await message.reply(cleanResponse);
