@@ -1,0 +1,22 @@
+{
+  "memories": [
+    {
+      "timestamp": "2024-03-20T15:30:00Z",
+      "type": "user_message",
+      "content": "I'm starting work on the new documentation project",
+      "importance": 2
+    },
+    {
+      "timestamp": "2024-03-20T09:00:00Z",
+      "type": "morning_check",
+      "content": "My goal for today is to complete the first draft",
+      "importance": 3
+    },
+    {
+      "timestamp": "2024-03-20T21:00:00Z",
+      "type": "evening_review",
+      "content": "Completed the documentation outline and wrote two sections",
+      "importance": 2
+    }
+  ]
+} 

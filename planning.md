@@ -1,0 +1,9 @@
+- upload weekly plan/review each week 
+- messages you each morning to ask for your plan for that day
+- integrates with clockify
+- if clockify is not tracking, will randomly message to ask what user is doing
+- option to either ask followup questions or end conversation
+- at end of the day, messages to ask how day went
+- summarises and remembers into memory module
+- json file for storage
+- discord bot

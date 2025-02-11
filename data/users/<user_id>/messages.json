@@ -1,0 +1,33 @@
+{
+  "morning": [
+    {
+      "timestamp": "2024-03-20T09:00:00Z",
+      "message": "hey, what are you planning to work on today?"
+    }
+  ],
+  "evening": [
+    {
+      "timestamp": "2024-03-20T21:00:00Z",
+      "message": "hey, how did your day go?"
+    }
+  ],
+  "activity": [
+    {
+      "timestamp": "2024-03-20T14:00:00Z",
+      "message": "what are you working on rn?"
+    }
+  ],
+  "weekly": [
+    {
+      "timestamp": "2024-03-17T18:00:00Z",
+      "message": "hey, let's do our weekly review! how did this week go overall?"
+    }
+  ],
+  "conversation": [
+    {
+      "timestamp": "2024-03-20T15:30:00Z",
+      "user": "I'm working on the project documentation",
+      "bot": "that's great! how's it coming along?"
+    }
+  ]
+} 
